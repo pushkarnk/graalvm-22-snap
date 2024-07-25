@@ -1,0 +1,55 @@
+name: graalvm-22
+base: core24
+version: '0.01'
+summary: GraalVM for the Java Development Kit v22
+description: |
+  GraalVM is an advanced JDK with ahead-of-time Native Image compilation.
+  Native image compilation solves Java's slow startup problem.
+
+  This snap brings in the latest GraalVM features, as well as access to the Java 22
+  features, in one JDK. It empowers developers to build faster, smaller and leaner
+  applications that are typically ideal for cloud-native deployment.
+
+grade: devel
+confinement: devmode
+
+parts:
+  graalvm:
+    plugin: nil
+    source: https://github.com/oracle/graal.git
+    source-type: git
+    source-tag: jdk-22.0.2
+    build-packages:
+    - gcc
+    - make
+    - cmake
+    - wget
+    - git
+    override-build: |
+      rm -rf $CRAFT_PART_SRC/*
+      git clone https://github.com/graalvm/mx
+      export PATH=$PATH:$CRAFT_PART_BUILD/mx
+      wget https://github.com/graalvm/labs-openjdk-22/releases/download/22.0.2%2B9-jvmci-b01/labsjdk-ce-22.0.2+9-jvmci-b01-linux-amd64.tar.gz
+      tar xzf labsjdk-ce-22.0.2+9-jvmci-b01-linux-amd64.tar.gz
+      export JAVA_HOME=$CRAFT_PART_BUILD/labsjdk-ce-22.0.2-jvmci-b01
+      cd vm
+      mx --env ce build
+      craftctl default
+    stage-packages:
+    - build-essential
+    - libz-dev
+    - zlib1g-dev
+    override-stage: |
+      mv $CRAFT_PART_INSTALL/graalvm/graalvm-community-openjdk-22.0.2+9.1 $CRAFT_PART_INSTALL/graalvm/graalvm-ce-22.0.2
+      craftctl default
+
+apps:
+  java:
+    command: graalvm/graalvm-ce-22.0.2/bin/java
+
+  javac:
+    command: graalvm/graalvm-ce-22.0.2/bin/javac
+
+  native-image:
+    command: graalvm/graalvm-ce-22.0.2/bin/native-image 
+    
